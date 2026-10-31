@@ -22,7 +22,13 @@ const fromRow = (r) => r && ({
 
 export async function createSupabaseStore(cfg) {
   const { createClient } = await import('@supabase/supabase-js');
-  const sb = createClient(cfg.supabase.url, cfg.supabase.serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  // We never use Supabase Realtime, but supabase-js sets it up anyway and, on Node versions without a
+  // built-in WebSocket (Node 20), crashes. Hand it an inert stand-in there so the database and storage work.
+  const NoRealtime = class { constructor() { throw new Error('Realtime is not used by this app.'); } };
+  const sb = createClient(cfg.supabase.url, cfg.supabase.serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    ...(typeof globalThis.WebSocket === 'undefined' ? { realtime: { transport: NoRealtime } } : {}),
+  });
   const bucket = cfg.supabase.bucket;
   const check = ({ data, error }) => { if (error) { const e = new Error(error.message); e.code = error.code; throw e; } return data; };
 

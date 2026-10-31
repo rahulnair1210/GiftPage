@@ -233,6 +233,15 @@ route('POST', 'admin/disable', async (ctx) => {
   return json({ ok: true, status: body.enable ? 'paid' : 'disabled' });
 });
 
+/** Plain-language reason for a failed connection to Supabase. */
+function setupHint(e) {
+  const m = String(e && e.message || e);
+  if (/WebSocket/i.test(m)) return 'The server is on an old Node.js version. Upload the latest netlify.toml (NODE_VERSION = "22") and server/store/supabase.js, then redeploy with "Deploy project without cache".';
+  if (/supabaseUrl|valid HTTP|Invalid URL/i.test(m)) return 'SUPABASE_URL is not a valid address. It should look like https://abcdefgh.supabase.co (nothing after .co).';
+  if (/supabaseKey|key is required/i.test(m)) return 'SUPABASE_SERVICE_ROLE_KEY is empty. Paste your Supabase secret key (sb_secret_...).';
+  return 'Could not connect to Supabase: ' + m;
+}
+
 // ---------- entry point ----------
 export async function handle(request) {
   try {
@@ -241,7 +250,13 @@ export async function handle(request) {
     const cfg = config();
     // Hosted (Vercel/Netlify) file systems are read-only, so local file storage only runs under dev-server.js.
     if (!process.env.GIFTPAGE_LOCAL && !(cfg.supabase.url && cfg.supabase.serviceKey)) fail(503, 'Storage is not set up. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
-    const store = await getStore(cfg);
+    let store;
+    try { store = await getStore(cfg); }
+    catch (e) {
+      console.error('Could not connect to storage:', e);
+      if (path === 'health') return json({ ok: false, store: 'supabase', payments: paymentMode(cfg), database: setupHint(e), photos: 'not checked' }, 500);
+      fail(503, "The site can't reach its storage right now. If you run this site, open /api/health to see why.");
+    }
     const ctx = { request, cfg, store };
     for (const r of routes) {
       const m = path.match(r.re);

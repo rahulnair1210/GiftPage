@@ -6,6 +6,7 @@ let cached;
 export async function getStore(cfg) {
   if (!cached) {
     cached = cfg.supabase.url && cfg.supabase.serviceKey ? createSupabaseStore(cfg) : Promise.resolve(createLocalStore(cfg));
+    cached.catch(() => { cached = null; }); // don't remember a failed connection: retry on the next request
   }
   return cached;
 }

@@ -28,7 +28,7 @@ Sell personalised birthday websites. People build a gift for free, pay once to p
 
 ## 1. Run it on your laptop (5 minutes, no accounts)
 
-You need Node.js 20 or newer.
+You need Node.js 22 or newer (20 still works, but Supabase is dropping support for it).
 
 ```bash
 npm install

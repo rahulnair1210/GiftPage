@@ -1,6 +1,12 @@
 // All settings come from environment variables. See .env.example.
 const env = (k, d = '') => (process.env[k] ?? d).toString().trim();
 
+// Keep only https://xxxx.supabase.co even if a longer address (e.g. .../rest/v1) was pasted.
+function supabaseOrigin(raw) {
+  if (!raw) return '';
+  try { const u = new URL(raw.includes('://') ? raw : 'https://' + raw); return u.origin; } catch { return raw.replace(/\/+$/, ''); }
+}
+
 export function config() {
   const siteUrl = env('SITE_URL', 'http://localhost:3000').replace(/\/+$/, '');
   return {
@@ -18,7 +24,7 @@ export function config() {
       apiBase: env('RAZORPAY_API_BASE', 'https://api.razorpay.com'),
     },
     supabase: {
-      url: env('SUPABASE_URL').replace(/\/+$/, ''),
+      url: supabaseOrigin(env('SUPABASE_URL')),
       serviceKey: env('SUPABASE_SERVICE_ROLE_KEY'),
       bucket: env('SUPABASE_BUCKET', 'gift-photos'),
     },
