@@ -206,12 +206,17 @@ route('POST', 'report', async (ctx) => {
 });
 
 // ---------- operations ----------
+async function cleanup(cfg, store) {
+  const now = Date.now();
+  const ids = await store.findExpired(now, now - cfg.draftDays * 86400_000);
+  for (const id of ids) await store.deleteGift(id);
+  return ids.length;
+}
+/** Used by the Netlify scheduled function (Vercel calls the HTTP route below instead). */
+export async function runCleanup() { const cfg = config(); return cleanup(cfg, await getStore(cfg)); }
 route('GET', 'cron/cleanup', async (ctx) => {
   bearer(ctx, ctx.cfg.cronSecret);
-  const now = Date.now();
-  const ids = await ctx.store.findExpired(now, now - ctx.cfg.draftDays * 86400_000);
-  for (const id of ids) await ctx.store.deleteGift(id);
-  return json({ deleted: ids.length });
+  return json({ deleted: await cleanup(ctx.cfg, ctx.store) });
 });
 route('GET', 'admin/reports', async (ctx) => { bearer(ctx, ctx.cfg.adminToken); return json({ reports: await ctx.store.listReports() }); });
 route('POST', 'admin/disable', async (ctx) => {
@@ -229,7 +234,8 @@ export async function handle(request) {
     const url = new URL(request.url);
     const path = (url.searchParams.get('path') ?? url.pathname.replace(/^\/api\/?/, '')).replace(/^\/+|\/+$/g, '');
     const cfg = config();
-    if (process.env.VERCEL && !(cfg.supabase.url && cfg.supabase.serviceKey)) fail(503, 'Storage is not set up. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
+    // Hosted (Vercel/Netlify) file systems are read-only, so local file storage only runs under dev-server.js.
+    if (!process.env.GIFTPAGE_LOCAL && !(cfg.supabase.url && cfg.supabase.serviceKey)) fail(503, 'Storage is not set up. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
     const store = await getStore(cfg);
     const ctx = { request, cfg, store };
     for (const r of routes) {
