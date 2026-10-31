@@ -1,0 +1,43 @@
+[build]
+  publish = "public"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# The gift page for every link: /g/<name> shows view.html (the URL stays the same)
+[[redirects]]
+  from = "/g/*"
+  to = "/view.html"
+  status = 200
+
+# Clean URLs for the other pages
+[[redirects]]
+  from = "/create"
+  to = "/create.html"
+  status = 200
+[[redirects]]
+  from = "/demo"
+  to = "/demo.html"
+  status = 200
+[[redirects]]
+  from = "/legal/:page"
+  to = "/legal/:page.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+[[headers]]
+  for = "/g/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+[[headers]]
+  for = "/create*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
