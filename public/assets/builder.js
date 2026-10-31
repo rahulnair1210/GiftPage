@@ -5,6 +5,9 @@ const SCHEMA = {
   curtain:   { label:'Curtain', title:'Curtain', desc:'A theatre marquee with a countdown. It stays closed until 12:00 AM on the date set in Basics, then they open the curtains.',
                fields:[{k:'title',label:'Marquee title'},{k:'subtitle',label:'Line under the title'},{k:'ticker',label:'Scrolling banner text'},{k:'label',label:'Line before their name, once it opens'},{k:'button',label:'Button text'}],
                hint:'Use {date} for the opening date, like “2nd October”. While the date is still ahead, the countdown shows even if this section is hidden.' },
+  puzzle:    { label:'Photo puzzle', title:'Photo puzzle', desc:'They swap the pieces of a photo back into place. When it’s solved, the sky turns to night, the moon rises and your message appears.',
+               fields:[{k:'title',label:'Heading'},{k:'size',label:'Difficulty',type:'select',options:[[3,'Easy · 3 × 3 (9 pieces)'],[4,'Harder · 4 × 4 (16 pieces)']]},{k:'message',label:'Message revealed when it’s solved',type:'textarea'},{k:'closing',label:'Closing line'}],
+               extra:'puzzlePhoto', hint:'If they get stuck, a “Solve it for me” button appears after a while, so they always reach your message.' },
   age:       { label:'Age reveal', title:'Age reveal', desc:'A huge number that counts up to their new age.',
                fields:[{k:'age',label:'Age they’re turning',type:'number'},{k:'above',label:'Line above the number'},{k:'below',label:'Line below the number'}] },
   birthday:  { label:'Happy birthday', title:'Happy birthday', desc:'Their name in big type, your wish, and a ribbon of photos.',
@@ -20,7 +23,7 @@ const SCHEMA = {
   chat:      { label:'Chat', title:'Chat', desc:'A phone that receives your messages one by one, with typing dots in between.',
                fields:[{k:'contact',label:'Contact name'}], list:{label:'Messages',add:'Add message',offset:null} }
 };
-const ORDER = ['basics','curtain','age','birthday','polaroids','sketchbook','galaxy','chat'];
+const ORDER = ['basics','curtain','puzzle','age','birthday','polaroids','sketchbook','galaxy','chat'];
 
 let state = makeDefaults();
 let active = 'basics';
@@ -98,6 +101,32 @@ function fieldHTML(sec,f){
   return `<div class="field"><label for="${id}">${f.label}</label>${input}</div>`;
 }
 
+/* ---------- puzzle photo ---------- */
+function puzzlePhotoHTML(){
+  const own=state.puzzle.photo, img=own||(state.photos.length?state.photos[0]:window.GIFT_PUZZLE_DEFAULT);
+  const note=own?'Your photo':state.photos.length?'Using your first photo from Basics':'Using the birthday-cake picture';
+  return `<span class="flabel">Puzzle photo</span>
+  <div class="slots"><div class="slot ${own?'':'auto'}" id="pz-slot">
+    <button class="slot-pic" id="pz-pick" aria-label="${own?'Replace':'Choose'} the puzzle photo"><img src="${img}" alt=""></button>
+    <input type="file" accept="image/*" hidden id="pz-file">
+    <div class="slot-meta"><span>Photo to put back together</span><small>${note}</small></div>
+    ${own?'<button class="icon-btn" id="pz-rm" aria-label="Remove the puzzle photo">×</button>':'<span></span>'}
+  </div></div>
+  <p class="hint" style="margin:-4px 0 16px">Tap the photo, or drop one on it, to choose. A picture with clear shapes and colours is easiest to solve. It’s cropped to a square.</p>`;
+}
+function wirePuzzlePhoto(p){
+  const file=p.querySelector('#pz-file'), slot=p.querySelector('#pz-slot');
+  p.querySelector('#pz-pick').onclick=()=>file.click();
+  const set=async f=>{ if(!f||!f.type.startsWith('image/')) return; setStatus(true);
+    try{ state.puzzle.photo=await uploadPhoto(f); }catch(e){ toast(e.message||'That photo could not be uploaded.',true); }
+    renderPanel(); refresh(true); };
+  file.onchange=()=>set(file.files[0]);
+  slot.addEventListener('dragover',e=>{e.preventDefault();slot.classList.add('over')});
+  slot.addEventListener('dragleave',()=>slot.classList.remove('over'));
+  slot.addEventListener('drop',e=>{e.preventDefault();slot.classList.remove('over');set(e.dataTransfer.files[0])});
+  const rm=p.querySelector('#pz-rm'); if(rm) rm.onclick=()=>{ state.puzzle.photo=''; renderPanel(); refresh(true); };
+}
+
 /* ---------- sketchbook photo spots ---------- */
 function slotLabel(i){ const page=Math.floor(i/2)+1, spread=Math.ceil(page/2); return `Spread ${spread} · ${page%2?'left':'right'} page, ${i%2?'second':'first'} photo`; }
 function slotHTML(key,label){
@@ -169,6 +198,7 @@ function renderPanel(){
     });
     if(S.hint) h+=`<p class="hint" style="margin-top:-8px;margin-bottom:16px">${S.hint}</p>`;
     if(S.extra==='sketchPhotos') h+=sketchPhotosHTML();
+    if(S.extra==='puzzlePhoto') h+=puzzlePhotoHTML();
     if(S.list){
       const items=state[active].items;
       h += `<span class="flabel">${S.list.label}</span>`;
@@ -185,6 +215,7 @@ function renderPanel(){
 function wirePanel(){
   const p=$('#panel');
   if(active==='sketchbook') wireSlots(p);
+  if(active==='puzzle') wirePuzzlePhoto(p);
   const t=$('#shown'); if(t) t.onclick=()=>{ state.show[active]=!state.show[active]; renderTabs(); renderPanel(); refresh(true); };
   p.querySelectorAll('[data-sec]').forEach(el=>el.oninput=()=>{
     state[el.dataset.sec][el.dataset.k] = el.type==='checkbox' ? el.checked : (el.type==='number'||el.tagName==='SELECT') ? Math.max(0,parseInt(el.value)||0) : el.value;
@@ -246,6 +277,7 @@ async function addFiles(list){
 /* ---------- server: session, autosave ---------- */
 let session=null;      // { id, key }
 let meta={status:'draft', slug:null, url:null, email:'', phone:''};
+let lastSaveError='';
 let booted=false, saveTimer=null, saving=false, saveAgain=false, dirty=false;
 let siteCfg={priceInr:299, payments:'off', brand:'Giftpage'};
 
@@ -283,8 +315,9 @@ async function saveNow(){
     await ensureGift();
     dirty=false;
     await api(`gifts/${session.id}`,{method:'PUT',body:{config:state}});
-    setSave(meta.status==='paid'?'Saved · changes are live':'Saved'); remember();
+    setSave(meta.status==='paid'?'Saved · changes are live':'Saved'); remember(); lastSaveError='';
   }catch(e){
+    if(e.message!==lastSaveError){ lastSaveError=e.message; toast(`Couldn't save: ${e.message}`,true); }
     dirty=true; setSave('Not saved yet, retrying…',true); saveTimer=setTimeout(saveNow,5000);
     if(e.status===403||e.status===404) { setSave(e.message,true); clearTimeout(saveTimer); }
   }finally{

@@ -61,7 +61,12 @@ function bearer(ctx, secret) {
 }
 
 // ---------- public config ----------
-route('GET', 'health', async (ctx) => json({ ok: true, store: ctx.store.kind, payments: paymentMode(ctx.cfg) }));
+route('GET', 'health', async (ctx) => {
+  let checks;
+  try { checks = await ctx.store.check(); } catch (e) { checks = { database: String(e.message || e), photos: 'not checked' }; }
+  const ok = checks.database.startsWith('ok') && checks.photos.startsWith('ok');
+  return json({ ok, store: ctx.store.kind, payments: paymentMode(ctx.cfg), ...checks }, ok ? 200 : 500);
+});
 route('GET', 'config', async (ctx) => json({
   brand: ctx.cfg.brand, priceInr: ctx.cfg.priceInr, currency: ctx.cfg.currency,
   payments: paymentMode(ctx.cfg), razorpayKeyId: paymentMode(ctx.cfg) === 'razorpay' ? ctx.cfg.razorpay.keyId : null,

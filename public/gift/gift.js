@@ -33,6 +33,86 @@ I.age=function(sec){var el=sec.querySelector('.age-num'),to=+G.age.age||0,done=f
   onVisible(sec,function(v){if(!v||done||reduce)return;done=true;var t0=performance.now(),d=1700;
     (function step(n){var k=Math.min(1,(n-t0)/d),e=1-Math.pow(1-k,4);el.textContent=Math.round(to*e);if(k<1)requestAnimationFrame(step)})(t0)},.45)};
 
+/* ---- photo puzzle: swap pieces back into place; solving it turns the sky to night and reveals a message ---- */
+var CAKE=(function(){
+  var b='',cols=['#ff7a9c','#ffc24f','#7fc8ff','#9be3b0','#c79bff'];
+  for(var i=0;i<9;i++){var x=10+i*44;b+='<path d="M'+x+' 34 L'+(x+40)+' 34 L'+(x+20)+' 74Z" fill="'+cols[i%5]+'"/>'}
+  var conf='';for(var c=0;c<34;c++){var cx=(c*97)%400,cy=90+(c*53)%180;conf+='<rect x="'+cx+'" y="'+cy+'" width="6" height="11" rx="2" fill="'+cols[c%5]+'" transform="rotate('+((c*37)%90)+' '+cx+' '+cy+')" opacity=".75"/>'}
+  var candles='';for(var k=0;k<5;k++){var x2=150+k*25;candles+='<rect x="'+x2+'" y="150" width="9" height="40" rx="3" fill="'+(k%2?'#7fc8ff':'#ff7a9c')+'"/><rect x="'+x2+'" y="160" width="9" height="5" fill="#fff" opacity=".7"/><rect x="'+x2+'" y="174" width="9" height="5" fill="#fff" opacity=".7"/><ellipse cx="'+(x2+4.5)+'" cy="139" rx="6" ry="11" fill="url(#fl)"/>'}
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1b5e"/><stop offset=".55" stop-color="#7b3f8f"/><stop offset="1" stop-color="#f08a7a"/></linearGradient><radialGradient id="fl" cx=".5" cy=".65" r=".6"><stop offset="0" stop-color="#fff6c4"/><stop offset=".55" stop-color="#ffc24f"/><stop offset="1" stop-color="#ff7a2f" stop-opacity="0"/></radialGradient></defs>'+
+    '<rect width="400" height="400" fill="url(#bg)"/><path d="M0 30 Q200 60 400 30" stroke="#fff" stroke-width="2" fill="none" opacity=".8"/>'+b+conf+
+    '<ellipse cx="60" cy="150" rx="34" ry="42" fill="#ff7a9c"/><path d="M60 192 q-8 40 6 80" stroke="#fff" stroke-width="1.5" fill="none"/><ellipse cx="50" cy="135" rx="8" ry="12" fill="#fff" opacity=".35"/>'+
+    '<ellipse cx="345" cy="130" rx="32" ry="40" fill="#ffc24f"/><path d="M345 170 q10 40 -4 90" stroke="#fff" stroke-width="1.5" fill="none"/><ellipse cx="335" cy="116" rx="7" ry="11" fill="#fff" opacity=".35"/>'+
+    '<rect x="0" y="330" width="400" height="70" fill="#5a2c3c"/><rect x="0" y="330" width="400" height="8" fill="#7a3f52"/>'+
+    '<ellipse cx="200" cy="332" rx="140" ry="14" fill="#f3e9f7"/>'+
+    '<rect x="95" y="250" width="210" height="80" rx="10" fill="#fff4e6"/><path d="M95 262 q15 22 30 0 q15 22 30 0 q15 22 30 0 q15 22 30 0 q15 22 30 0 q15 22 30 0 q15 22 30 0 V250 H95Z" fill="#ff7a9c"/>'+
+    '<circle cx="125" cy="300" r="5" fill="#7fc8ff"/><circle cx="170" cy="306" r="5" fill="#ffc24f"/><circle cx="215" cy="298" r="5" fill="#9be3b0"/><circle cx="262" cy="305" r="5" fill="#c79bff"/>'+
+    '<rect x="130" y="188" width="140" height="64" rx="9" fill="#ffe1ea"/><path d="M130 198 q12 18 23 0 q12 18 23 0 q12 18 23 0 q12 18 23 0 q12 18 23 0 q12 18 23 0 V188 H130Z" fill="#ffc24f"/>'+
+    candles+'<circle cx="320" cy="60" r="3" fill="#fff"/><circle cx="90" cy="96" r="2" fill="#fff"/><circle cx="270" cy="92" r="2.5" fill="#fff"/></svg>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)})();
+window.GIFT_PUZZLE_DEFAULT=CAKE;
+function puzzleSrc(){var z=G.puzzle||{};return z.photo||(G.photos&&G.photos.length?ph(0):CAKE)}
+B.puzzle=function(){var z=G.puzzle||{},n=+z.size===4?4:3;
+  return '<section id="s-puzzle" class="s-puzzle" aria-label="Photo puzzle"><div class="pz-sky" aria-hidden="true"><div class="pz-stars"></div><div class="pz-moon"><i></i><i></i><i></i></div></div>'+
+    '<div class="pz-wrap"><div class="pz-head"><h2 class="display">'+t(z.title||'Put me back together')+'</h2><p class="pz-sub">Tap two pieces to swap them, or drag one onto another.</p></div>'+
+    '<div class="pz-frame"><div class="pz-board" style="--n:'+n+'" role="group" aria-label="Photo puzzle, '+n+' by '+n+'"><div class="pz-full" aria-hidden="true"></div></div></div>'+
+    '<div class="pz-bar"><span class="pz-moves" aria-live="polite">0 moves</span><button class="pz-btn pz-peek" type="button">Peek</button><button class="pz-btn pz-help" type="button" hidden>Solve it for me</button></div>'+
+    '<div class="pz-msg" aria-live="polite"><p class="pz-line hand">'+t(z.message)+'</p><p class="pz-sign">'+t(z.closing)+'</p><button class="pz-btn pz-again" type="button">Play again</button></div></div></section>'};
+I.puzzle=function(sec){
+  var z=G.puzzle||{},n=+z.size===4?4:3,N=n*n,src=puzzleSrc(),board=sec.querySelector('.pz-board'),full=sec.querySelector('.pz-full');
+  var pieces=[],slots=[],sel=null,moves=0,done=false,started=0,movesEl=sec.querySelector('.pz-moves'),help=sec.querySelector('.pz-help');
+  var img=new Image(),ar=1;img.onload=function(){ar=img.naturalWidth/img.naturalHeight||1;layout()};img.src=src;
+  full.style.backgroundImage='url("'+src+'")';
+  for(var p=0;p<N;p++){var b=document.createElement('button');b.type='button';b.className='pz-piece';b.dataset.p=p;
+    b.style.backgroundImage='url("'+src+'")';board.appendChild(b);pieces.push(b)}
+  /* stars for the night sky */
+  var st=sec.querySelector('.pz-stars'),r=rng(41),h='';
+  for(var k=0;k<110;k++){var sz=(r()*2.2+.8).toFixed(1);h+='<span style="left:'+(r()*100).toFixed(2)+'%;top:'+(r()*100).toFixed(2)+'%;width:'+sz+'px;height:'+sz+'px;animation-delay:-'+(r()*4).toFixed(2)+'s;transition-delay:'+(.4+r()*1.6).toFixed(2)+'s"></span>'}
+  st.innerHTML=h;
+  function shuffle(){var o=[];for(var i=0;i<N;i++)o.push(i);
+    do{for(var j=N-1;j>0;j--){var q=Math.floor(Math.random()*(j+1)),tmp=o[j];o[j]=o[q];o[q]=tmp}}
+    while(o.filter(function(v,i){return v===i}).length>Math.floor(N/4));   // keep most pieces out of place
+    slots=o}
+  function layout(){var W=board.clientWidth,pw=W/n,bw,bh,ox=0,oy=0;
+    if(ar>=1){bh=W;bw=W*ar;ox=(bw-W)/2}else{bw=W;bh=W/ar;oy=(bh-W)/2}   // like background-size:cover
+    pieces.forEach(function(el,i){var c=i%n,rr=Math.floor(i/n);el.style.backgroundSize=bw+'px '+bh+'px';el.style.backgroundPosition=(-(c*pw+ox))+'px '+(-(rr*pw+oy))+'px'});
+    full.style.backgroundSize='cover';place()}
+  function place(){slots.forEach(function(pi,s){var el=pieces[pi];if(el.classList.contains('drag'))return;
+    el.style.transform='translate('+(s%n)*100+'%,'+Math.floor(s/n)*100+'%)';
+    el.setAttribute('aria-label','Piece '+(pi+1)+(pi===s?', in place':'')) })}
+  function setMoves(){movesEl.textContent=moves+(moves===1?' move':' moves');
+    if(!done&&help.hidden&&(moves>=(n===4?40:18)||(started&&Date.now()-started>45000)))help.hidden=false}
+  function select(el){if(sel)sel.classList.remove('sel');sel=el;if(el)el.classList.add('sel')}
+  function swapSlots(a,b){if(a===b)return;var t2=slots[a];slots[a]=slots[b];slots[b]=t2;moves++;if(!started)started=Date.now();setMoves();place();check()}
+  function slotOf(el){return slots.indexOf(+el.dataset.p)}
+  function tap(el){if(done)return;if(!sel){select(el);return}if(sel===el){select(null);return}var a=slotOf(sel),b2=slotOf(el);select(null);swapSlots(a,b2)}
+  function check(){if(slots.every(function(v,i){return v===i}))solved()}
+  function solved(){done=true;select(null);help.hidden=true;board.classList.add('done');
+    pieces.forEach(function(el){el.disabled=true});
+    setTimeout(function(){sec.classList.add('night')},450)}
+  /* pointer: a short press is a tap; moving more than a few pixels drags the piece onto another */
+  var drag=null;
+  board.addEventListener('pointerdown',function(e){var el=e.target.closest('.pz-piece');if(!el||done)return;
+    drag={el:el,x:e.clientX,y:e.clientY,moved:false,id:e.pointerId};el.setPointerCapture(e.pointerId)});
+  board.addEventListener('pointermove',function(e){if(!drag||e.pointerId!==drag.id)return;var dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+    if(!drag.moved&&Math.hypot(dx,dy)<7)return;
+    if(!drag.moved){drag.moved=true;select(null);drag.el.classList.add('drag')}
+    var s=slotOf(drag.el),pw=board.clientWidth/n;
+    drag.el.style.transform='translate('+((s%n)*pw+dx)+'px,'+(Math.floor(s/n)*pw+dy)+'px) scale(1.06)'});
+  function end(e){if(!drag||e.pointerId!==drag.id)return;var d=drag;drag=null;
+    if(!d.moved){tap(d.el);return}
+    d.el.classList.remove('drag');
+    var br=board.getBoundingClientRect(),pw=br.width/n,c=Math.floor((e.clientX-br.left)/pw),rr=Math.floor((e.clientY-br.top)/pw);
+    if(c>=0&&c<n&&rr>=0&&rr<n)swapSlots(slotOf(d.el),rr*n+c);else place()}
+  board.addEventListener('pointerup',end);board.addEventListener('pointercancel',function(e){if(drag){drag.el.classList.remove('drag');drag=null;place()}});
+  board.addEventListener('click',function(e){var el=e.target.closest('.pz-piece');if(el&&e.detail===0)tap(el)});   // keyboard (Enter/Space)
+  var peekT;sec.querySelector('.pz-peek').onclick=function(){board.classList.add('peek');clearTimeout(peekT);peekT=setTimeout(function(){board.classList.remove('peek')},1600)};
+  help.onclick=function(){help.hidden=true;var i=0;
+    (function step(){if(done)return;while(i<N&&slots[i]===i)i++;if(i>=N)return;var j=slots.indexOf(i);var t3=slots[i];slots[i]=slots[j];slots[j]=t3;place();setTimeout(function(){check();if(!done)step()},reduce?0:260)})()};
+  sec.querySelector('.pz-again').onclick=function(){sec.classList.remove('night');board.classList.remove('done');done=false;moves=0;started=0;setMoves();
+    pieces.forEach(function(el){el.disabled=false});setTimeout(function(){shuffle();place()},300)};
+  shuffle();layout();setMoves();addEventListener('resize',layout)};
+
 /* ---- happy birthday ---- */
 B.birthday=function(){var b=G.birthday;return '<section id="s-birthday" class="s-bday" aria-label="Happy birthday"><div class="bday-text"><p class="bday-date">'+t(b.date)+'</p><h1 class="bday-h display"><span class="l1">'+t(b.first)+'</span><span class="l2">'+t(b.second)+'</span><span class="nm">'+esc(NAME)+'</span></h1><div class="bday-rule"></div><p class="bday-wish">'+t(b.wish)+'</p></div><div class="ribbon" aria-hidden="true"></div></section>'};
 I.birthday=function(sec){
@@ -51,7 +131,27 @@ I.birthday=function(sec){
       tiles[i].style.transform='translate('+(p.x*sx-size/2)+'px,'+(p.y*sy-size/2)+'px) rotate('+a+'rad)'}}
   function loop(n){if(vis&&!paused&&!reduce){off=(off+(n-(last||n))*.028)%L;place()}last=n;requestAnimationFrame(loop)}
   measure();place();addEventListener('resize',function(){measure();place()});
-  layer.addEventListener('mouseenter',function(){paused=true});layer.addEventListener('mouseleave',function(){paused=false});
+  /* preview: hover a photo (tap on phones) to see it larger and in colour; the ribbon pauses meanwhile */
+  var pop=document.createElement('div');pop.className='rib-pop';pop.setAttribute('aria-hidden','true');pop.innerHTML='<img alt="">';sec.appendChild(pop);
+  var popImg=pop.querySelector('img'),current=null,pinned=false;
+  function show(t){
+    if(current&&current!==t)current.classList.remove('on');
+    current=t;paused=true;t.classList.add('on');popImg.src=t.querySelector('img').src;
+    var sr=sec.getBoundingClientRect(),tr=t.getBoundingClientRect(),W=Math.max(150,Math.min(250,sr.width*.2));
+    pop.style.width=W+'px';
+    var H=pop.offsetHeight,cx=tr.left-sr.left+tr.width/2,below=false;
+    var x=Math.max(12,Math.min(sr.width-W-12,cx-W/2)),y=tr.top-sr.top-H-14;
+    if(y<12){y=tr.bottom-sr.top+14;below=true}             // no room above: open below the photo
+    pop.style.left=x+'px';pop.style.top=y+'px';
+    pop.style.transformOrigin=(cx-x)+'px '+(below?'0':'100%');
+    pop.classList.add('on')}
+  function hide(){if(current)current.classList.remove('on');current=null;pinned=false;paused=false;pop.classList.remove('on')}
+  tiles.forEach(function(t){
+    t.addEventListener('pointerenter',function(e){if(e.pointerType==='mouse'&&!pinned)show(t)});
+    t.addEventListener('pointerleave',function(e){if(e.pointerType==='mouse'&&!pinned)hide()});
+    t.addEventListener('click',function(e){e.stopPropagation();if(pinned&&current===t){hide();return}show(t);pinned=true})});
+  document.addEventListener('click',function(e){if(pinned&&!e.target.closest('.tile'))hide()});
+  addEventListener('keydown',function(e){if(e.key==='Escape'&&current)hide()});
   onVisible(sec,function(v){vis=v});requestAnimationFrame(loop)};
 
 /* ---- polaroids ---- */
@@ -213,7 +313,7 @@ I.chat=function(sec){var box=sec.querySelector('.msgs'),msgs=G.chat.items,run=0,
   sec.querySelector('.compose button').onclick=play};
 
 /* ---- assemble (only once the doors are open, so nothing can be scrolled to early) ---- */
-var ORDER=['age','birthday','polaroids','sketchbook','galaxy','chat'],app=document.getElementById('gift'),built=false;
+var ORDER=['puzzle','age','birthday','polaroids','sketchbook','galaxy','chat'],app=document.getElementById('gift'),built=false;
 function build(){if(built)return;built=true;var html='';
   ORDER.forEach(function(id){if(G.show&&G.show[id]&&G[id])html+=B[id]()});
   html+='<footer class="foot"><span class="h">♥</span> '+t((G.birthday&&G.birthday.footer)||'Made for you')+(opts.footerHTML||'')+'</footer>';
@@ -271,6 +371,10 @@ else if((G.show&&G.show.curtain)||isLocked()||G.complete===false)makeCurtain();
 else build();
 
 /* the builder can jump around the preview; a downloaded gift ignores this */
-if(G.preview)addEventListener('message',function(e){if(e.data&&e.data.goto){openCurtain(true);if(e.data.goto==='curtain'){scrollTo(0,0);return}goto(e.data.goto,true)}});
+if(G.preview)addEventListener('message',function(e){
+  if(!e.data||!e.data.goto)return;
+  /* "go to the curtain" brings it back down, so the Curtain tab always shows the curtain */
+  if(e.data.goto==='curtain'){scrollTo(0,0);if(!cur)makeCurtain();return}
+  openCurtain(true);goto(e.data.goto,true)});
 };
 })();

@@ -44,6 +44,7 @@ export function createLocalStore(cfg) {
       return all().filter((g) => (g.status !== 'paid' && g.updatedAt < draftCutoff) || (g.status === 'paid' && g.expiresAt && g.expiresAt < now)).map((g) => g.id);
     },
     async addReport(r) { const db = load(); db.reports.push(r); save(db); },
+    async check() { return { database: 'ok (local files)', photos: 'ok (local files)' }; },
     async listReports() { return load().reports.slice(-200).reverse(); },
   };
 }

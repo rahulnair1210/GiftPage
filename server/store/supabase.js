@@ -63,6 +63,21 @@ export async function createSupabaseStore(cfg) {
       return [...drafts, ...paid].map((r) => r.id);
     },
     async addReport(r) { check(await sb.from('reports').insert({ slug: r.slug, reason: r.reason, details: r.details, created_at: new Date(r.createdAt).toISOString() })); },
+    /** Setup check for /api/health: plain-language reasons when the database or bucket isn't reachable. */
+    async check() {
+      const out = { database: 'ok', photos: 'ok' };
+      const d = await sb.from('gifts').select('id').limit(1);
+      if (d.error) out.database = /does not exist|relation/i.test(d.error.message) ? 'The gifts table is missing. Run supabase/schema.sql in the Supabase SQL Editor.'
+        : /invalid api key|jwt|unauthorized|apikey/i.test(d.error.message) ? 'Supabase rejected the key. SUPABASE_SERVICE_ROLE_KEY must be the secret key (sb_secret_...), not the publishable one.'
+        : d.error.message;
+      const probe = `_health/${Date.now()}.txt`;
+      const u = await sb.storage.from(bucket).upload(probe, Buffer.from('ok'), { contentType: 'text/plain', upsert: true });
+      if (u.error) out.photos = /not found/i.test(u.error.message) ? `The "${bucket}" bucket is missing. Run supabase/schema.sql, or create a public bucket with that name.`
+        : /row-level security|unauthorized|invalid/i.test(u.error.message) ? 'Supabase refused the upload. SUPABASE_SERVICE_ROLE_KEY must be the secret key (sb_secret_...), not the publishable one.'
+        : u.error.message;
+      else await sb.storage.from(bucket).remove([probe]);
+      return out;
+    },
     async listReports() { return check(await sb.from('reports').select('*').order('created_at', { ascending: false }).limit(200)); },
   };
 }
