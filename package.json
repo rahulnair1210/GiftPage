@@ -1,0 +1,16 @@
+{
+  "name": "giftpage",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personalized birthday gift websites: builder, hosted gift links, countdown lock and Razorpay payments.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "node dev-server.js",
+    "test": "node scripts/smoke-test.js",
+    "admin": "node scripts/admin.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

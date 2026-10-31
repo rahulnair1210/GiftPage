@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Demo gift</title>
+<link rel="icon" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,500;12..96,800&family=Caveat:wght@500;700&family=Anton&family=Yellowtail&family=Space+Mono:wght@400;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/gift/gift.css?v=1">
+<style>
+  .make{position:fixed;z-index:300;right:18px;bottom:18px;background:#FFC24F;color:#2A1400;font-family:'Figtree',sans-serif;font-weight:700;text-decoration:none;border-radius:999px;padding:12px 20px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+  .embed .make{display:none}
+</style>
+</head>
+<body>
+<main id="gift"></main>
+<a class="make" href="/create">Make one for someone</a>
+<script src="/gift/gift.js?v=1"></script>
+<script src="/assets/defaults.js?v=1"></script>
+<script>
+  // A sample gift: opens in 3 days, with a "skip" pill so visitors can look inside right away.
+  if (new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');
+  var demo = GiftShared.makeDefaults(3);
+  renderGift(GiftShared.giftData(demo, { preview: true }), { footerHTML: ' · <a href="/create" style="color:inherit">Make one like this</a>' });
+</script>
+</body>
+</html>

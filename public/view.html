@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>You've got a birthday surprise</title>
+<meta name="description" content="Someone made you something. Open it when the curtain rises.">
+<meta property="og:title" content="You've got a birthday surprise 🎁">
+<meta property="og:description" content="Someone made you something. Open it when the curtain rises.">
+<meta property="og:image" content="https://YOUR-DOMAIN/og.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#5E0F1E">
+<link rel="icon" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,500;12..96,800&family=Caveat:wght@500;700&family=Anton&family=Yellowtail&family=Space+Mono:wght@400;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/gift/gift.css?v=1">
+<style>
+  .vmsg{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;background:#2A060E;color:#F8E3C4;font-family:'Figtree',sans-serif}
+  .vmsg h1{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:clamp(2.4rem,7vw,4.4rem);letter-spacing:.01em}
+  .vmsg p{opacity:.75;margin:10px auto 22px;max-width:40ch;line-height:1.5}
+  .vmsg a,.vmsg button{background:#FFC24F;color:#2A1400;border:0;border-radius:999px;padding:12px 22px;font-weight:700;text-decoration:none;font:inherit;font-weight:700;cursor:pointer}
+  .loading{min-height:100vh;display:grid;place-items:center;background:#2A060E;color:#F8E3C4;font-family:'Space Mono',monospace;letter-spacing:.2em;font-size:.7rem;text-transform:uppercase}
+  .foot a,.foot .report{color:inherit;background:none;border:0;font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:0}
+  #dlg-report{margin:auto;border:0;border-radius:16px;padding:22px;width:min(420px,92vw);font-family:'Figtree',sans-serif}
+  #dlg-report::backdrop{background:rgba(0,0,0,.5)}
+  #dlg-report h2{font-size:1.2rem;margin-bottom:10px}
+  #dlg-report select,#dlg-report textarea{width:100%;font:inherit;padding:9px;border:1px solid #ddd;border-radius:9px;margin:6px 0 12px}
+  #dlg-report .row{display:flex;gap:10px;justify-content:flex-end}
+  #dlg-report button{font:inherit;border-radius:9px;padding:9px 14px;border:1px solid #ddd;background:#fff;cursor:pointer}
+  #dlg-report button.primary{background:#24131A;color:#fff;border-color:#24131A}
+</style>
+</head>
+<body>
+<main id="gift"><div class="loading" role="status">Taking your seat…</div></main>
+<dialog id="dlg-report" aria-labelledby="rep-title">
+  <h2 id="rep-title">Report this page</h2>
+  <label for="rep-reason">What's wrong?</label>
+  <select id="rep-reason"><option>It has photos of me without permission</option><option>It's abusive or harassing</option><option>It's sexual or explicit</option><option>Something else</option></select>
+  <label for="rep-details">Details (optional)</label>
+  <textarea id="rep-details" rows="3"></textarea>
+  <div class="row"><button id="rep-cancel">Cancel</button><button class="primary" id="rep-send">Send report</button></div>
+</dialog>
+<script src="/assets/site.js?v=1"></script>
+<script src="/gift/gift.js?v=1"></script>
+<script>
+(async function(){
+  var slug = decodeURIComponent((location.pathname.split('/')[2] || '').trim());
+  var main = document.getElementById('gift');
+  function page(title, text, action){ main.innerHTML = '<section class="vmsg"><div><h1>'+title+'</h1><p>'+text+'</p>'+(action||'')+'</div></section>'; }
+  async function load(){
+    var r = await fetch('/api/view/' + encodeURIComponent(slug), { cache: 'no-store' });
+    if (r.status === 404) return { error: 'not_found' };
+    if (r.status === 410) return { error: 'removed' };
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }
+  var d;
+  try { d = await load(); }
+  catch (e) { return page('Lost the signal', "We couldn't load this gift. Check your connection and try again.", '<button onclick="location.reload()">Try again</button>'); }
+  if (d.error === 'not_found') return page('No show tonight', "There's no gift at this link. Check that you copied the whole link.", '<a href="/">Make your own</a>');
+  if (d.error === 'removed') return page('This page was taken down', 'The gift at this link is no longer available.', '<a href="/">Go to the home page</a>');
+  main.innerHTML = '';
+  window.renderGift(d.gift, {
+    serverNow: d.serverNow,
+    loadFull: async function(){ var x = await load(); return x && !x.locked && x.gift ? x.gift : null; },
+    footerHTML: ' · <a href="/">Made with ' + (window.SITE ? SITE.brand : 'Giftpage') + '</a> · <button class="report" type="button">Report</button>'
+  });
+  var dlg = document.getElementById('dlg-report');
+  document.addEventListener('click', function(e){ if (e.target.closest('.report')) dlg.showModal(); });
+  document.getElementById('rep-cancel').onclick = function(){ dlg.close(); };
+  document.getElementById('rep-send').onclick = async function(){
+    try { await fetch('/api/report', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ slug: slug, reason: document.getElementById('rep-reason').value, details: document.getElementById('rep-details').value }) }); } catch (e) {}
+    dlg.innerHTML = '<h2>Thanks for telling us</h2><p style="line-height:1.5">We review every report and remove pages that break our rules.</p><div class="row"><button class="primary" onclick="this.closest(\'dialog\').close()">Close</button></div>';
+  };
+})();
+</script>
+</body>
+</html>

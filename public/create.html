@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Make a birthday gift</title>
+<link rel="icon" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,500;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/builder.css?v=1">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">♥</span><span data-site="brand">Giftpage</span></a>
+    <div class="crumbs"><span id="crumb-name">Birthday gift</span></div>
+    <span class="save-status" id="save-status" aria-live="polite"></span>
+    <div class="spacer"></div>
+    <a class="live-link" id="live" hidden target="_blank" rel="noopener"></a>
+    <div class="mine-wrap">
+      <button class="ghost-btn" id="mine-btn" aria-expanded="false" aria-controls="mine">Your gifts</button>
+      <div class="mine" id="mine" hidden><div id="mine-list"></div></div>
+    </div>
+    <button class="link-btn" id="new-gift">New gift</button>
+    <button class="btn-dark" id="publish">Publish</button>
+  </header>
+  <main class="work">
+    <aside class="side">
+      <nav class="tabs" id="tabs" role="tablist" aria-label="Gift sections"></nav>
+      <div class="panel" id="panel"></div>
+      <div class="side-foot"><span id="foot-status">The preview is up to date.</span><span class="chip" id="foot-chip">Up to date</span></div>
+    </aside>
+    <section class="prev" aria-label="Preview">
+      <div class="ptools">
+        <div class="seg" role="group" aria-label="Preview size">
+          <button id="dev-desktop" aria-pressed="true">Desktop</button>
+          <button id="dev-phone" aria-pressed="false">Phone</button>
+        </div>
+        <select class="inp" id="jump" aria-label="Jump to section"></select>
+        <span class="chip" id="status">Up to date</span>
+      </div>
+      <div class="stage" id="stage"><iframe id="preview" title="Gift preview"></iframe></div>
+      <p class="caption">This is exactly what they'll see.</p>
+    </section>
+  </main>
+</div>
+
+<dialog id="dlg-publish" aria-labelledby="pub-title">
+  <div class="dlg" style="position:relative">
+    <button class="dlg-x" data-close aria-label="Close">×</button>
+    <h2 id="pub-title">Publish your gift</h2>
+    <p class="lead">You'll get a link to send them. You can keep editing after it's live.</p>
+    <ul class="checks" id="pub-checks"></ul>
+    <div class="field">
+      <label for="pub-slug">Their link</label>
+      <div class="slug-row"><span id="pub-host">/g/</span><input id="pub-slug" autocomplete="off" spellcheck="false" maxlength="40"></div>
+      <p class="slug-msg" id="pub-slug-msg" aria-live="polite"></p>
+    </div>
+    <div class="field">
+      <label for="pub-email">Your email</label>
+      <input class="inp" id="pub-email" type="email" autocomplete="email" placeholder="you@example.com">
+      <p class="hint">We send the gift link and your private edit link here.</p>
+    </div>
+    <div class="field">
+      <label for="pub-phone">Your phone <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+      <input class="inp" id="pub-phone" type="tel" autocomplete="tel" placeholder="+91">
+    </div>
+    <label class="agree"><input type="checkbox" id="pub-agree"> <span>I agree to the <a href="/legal/terms" target="_blank">terms</a> and <a href="/legal/refunds" target="_blank">refund policy</a>, and I have permission to share these photos.</span></label>
+    <button class="btn-dark pay-btn" id="pub-go">Pay and publish</button>
+    <p class="err" id="pub-error" role="alert"></p>
+    <p class="fine"><span id="pub-mode"></span> One-time payment of <span id="pub-price"></span>.</p>
+  </div>
+</dialog>
+
+<dialog id="dlg-test" aria-labelledby="test-title">
+  <div class="dlg">
+    <h2 id="test-title">Test checkout</h2>
+    <p class="lead">Payments are in test mode on this site, so this simulates Razorpay without charging anything.</p>
+    <div class="test-card"><strong id="test-amt">₹299</strong><span class="hint">No real money moves</span></div>
+    <div class="share-row"><button class="ghost-btn" id="test-cancel" style="flex:1">Cancel</button><button class="btn-dark" id="test-pay" style="flex:1">Pay (test)</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlg-live" aria-labelledby="live-title">
+  <div class="dlg" style="position:relative">
+    <button class="dlg-x" data-close aria-label="Close">×</button>
+    <h2 id="live-title">It's live!</h2>
+    <p class="lead">Send them this link. Before the opening date they'll only see the countdown.</p>
+    <div class="copy-row"><input class="inp" id="live-url" readonly aria-label="Gift link"><button class="btn-dark" id="live-copy">Copy</button></div>
+    <div class="share-row">
+      <a class="wa" id="live-wa" target="_blank" rel="noopener">Share on WhatsApp</a>
+      <a class="ghost-btn" id="live-open" target="_blank" rel="noopener">Open the gift</a>
+    </div>
+    <p class="hint" id="live-note" style="margin-top:16px"></p>
+    <button class="link-btn" id="live-resend" style="padding:6px 0">Email me the links again</button>
+  </div>
+</dialog>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script src="/gift/gift.js?v=1"></script>
+<script src="/assets/defaults.js?v=1"></script>
+<script src="/assets/builder.js?v=1"></script>
+</body>
+</html>
